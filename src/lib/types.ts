@@ -16,6 +16,7 @@ export interface Doc {
   starred: boolean;
   created_at: string;
   cites: string[]; // document_relations(kind = 'cites')
+  embed_model?: string; // 本文ベクトルを計算したモデル（違うモデルのベクトルとは比較しない）
   has_pdf?: boolean; // PDF 本体を保存済みか（本体は store.ts / Supabase Storage）
   imported_from?: "doi"; // DOI から追加（abstract は出版社のアブストラクト）
 }
@@ -26,6 +27,7 @@ export interface Chunk {
   page: number;
   section: string;
   content: string;
+  embedding?: number[]; // 正規化済みベクトル（Supabase では chunks.embedding）
 }
 
 export interface Highlight {

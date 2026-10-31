@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Dialog, DialogTitle, DialogTrigger, SheetContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/shared";
+import EmbedStatus from "@/components/EmbedStatus";
 import { cn } from "@/lib/utils";
 import { BookOpen, LayoutDashboard, LogOut, Menu, Network, Search, Settings, ShieldCheck } from "lucide-react";
 
@@ -52,6 +53,7 @@ export default function AppLayout() {
         </Dialog>
       </header>
       <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-8"><Outlet /></main>
+      <EmbedStatus />
     </div>
   );
 }

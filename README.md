@@ -19,7 +19,8 @@ npm run dev
 | PDF 表示 | react-pdf（pdf.js） | テキストレイヤーに `<mark>` を差し込み蛍光ペン表示 |
 | 保存（暫定） | IndexedDB（idb-keyval） | Supabase 接続までの間、ブラウザ内に文献・PDF・本文を保存 |
 | BaaS | Supabase（Auth / Postgres + pgvector / Storage） | スキーマは `supabase/schema.sql` |
-| RAG | Python（FastAPI）+ **BAAI/bge-m3**（無料・多言語・1024 次元） | Bolt の WebContainer では Python が動かないため別サービスとして配置 |
+| 埋め込み（現在） | **Transformers.js + BAAI/bge-m3**（`Xenova/bge-m3`、int8、ブラウザ内・Web Worker） | サーバー不要。設定で multilingual-e5-small（軽量）に切替可 |
+| RAG（予定） | Python（FastAPI）+ BAAI/bge-m3 | 同じモデルなので、ブラウザで計算したベクトルと互換 |
 
 ## サイトマップ
 
@@ -44,6 +45,7 @@ src/
   pages/               各画面
   lib/api.ts           データアクセス層（← Supabase 接続時はここだけ変更）
   lib/store.ts         ブラウザ内ストア（IndexedDB）
+  lib/embed.ts         埋め込みモデル（embed.worker.ts で計算）
   lib/doi.ts           DOI / arXiv ID からの書誌情報取得
   lib/pdf.ts           PDF テキストと引用文の照合 → ハイライト範囲
   lib/types.ts         型（schema.sql と対応）

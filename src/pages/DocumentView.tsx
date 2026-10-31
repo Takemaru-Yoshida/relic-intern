@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Switch, Label } from "@/components/ui/misc";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner, authorLine } from "@/components/shared";
-import { attachPdf, deleteDocument, findInDocument, getDocument, getPdfUrl, listDocuments, pickKeySentences, rankSentences } from "@/lib/api";
+import { attachPdf, deleteDocument, findInDocument, findSentences, getDocument, getPdfUrl, listDocuments, pickKeySentences } from "@/lib/api";
 import { pdfSource } from "@/lib/doi";
 import { sentencesOf, type Mark } from "@/lib/pdf";
 import { useAsync } from "@/lib/hooks";
@@ -74,7 +74,7 @@ export default function DocumentView() {
     const r = chunks.length ? await findInDocument(doc.id, q) : [];
     setHits(r);
     const qm: Mark[] = sents.length
-      ? rankSentences(q, sents).map((s, i) => ({ id: `q${i}`, kind: "query", quote: s.text, note: `「${q}」に一致 · 類似度 ${s.score.toFixed(2)}` }))
+      ? (await findSentences(doc.id, q)).map((s, i) => ({ id: `q${i}`, kind: "query", quote: s.text, note: `「${q}」に一致 · 類似度 ${s.score.toFixed(2)}` }))
       : r.map((h) => ({ id: h.id, kind: "query", quote: chunks.find((c) => c.id === h.chunk_id)!.content, note: h.reason }));
     setQueryMarks(qm);
     setBusy(false);
