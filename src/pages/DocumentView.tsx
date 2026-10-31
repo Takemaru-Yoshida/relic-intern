@@ -1,14 +1,14 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ExternalLink, FileText, FileUp, Highlighter, Loader2, Search, Sparkles, Star, Trash2, Type, X } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink, Pencil, FileText, FileUp, Highlighter, Loader2, Search, Sparkles, Star, Trash2, Type, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import { Switch, Label } from "@/components/ui/misc";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner, authorLine } from "@/components/shared";
-import { attachPdf, deleteDocument, findInDocument, findSentences, getDocument, getPdfUrl, listDocuments, pickKeySentences } from "@/lib/api";
+import { attachPdf, deleteDocument, updateDocument, findInDocument, findSentences, getDocument, getPdfUrl, listDocuments, pickKeySentences } from "@/lib/api";
 import { pdfSource } from "@/lib/doi";
 import { sentencesOf, type Mark } from "@/lib/pdf";
 import { useAsync } from "@/lib/hooks";
@@ -102,7 +102,7 @@ export default function DocumentView() {
         <article className="min-w-0">
           <div className="mb-6 space-y-3 border-b pb-6">
             <div className="flex flex-wrap gap-1.5">{doc.tags.map((t) => <Badge key={t} variant="secondary">{t}</Badge>)}</div>
-            <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{doc.title}</h1>
+            <TitleEditor key={doc.id} title={doc.title} onSave={async (title) => { await updateDocument(doc.id, { title }); doc.title = title; }} />
             <p className="text-sm text-muted-foreground">{authorLine(doc)} · {doc.venue}{doc.pages > 0 && ` · ${doc.pages} ページ`}{doc.doi && ` · doi:${doc.doi}`}</p>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm"><Star className={cn(doc.starred && "fill-partial text-partial")} />お気に入り</Button>
@@ -199,5 +199,34 @@ export default function DocumentView() {
         </aside>
       </div>
     </>
+  );
+}
+
+// タイトルの表示と編集（鉛筆ボタン → 入力欄。Enter で保存、Esc で取り消し）
+function TitleEditor({ title, onSave }: { title: string; onSave: (t: string) => Promise<void> }) {
+  const [cur, setCur] = useState(title); // PDF を読み直さないよう、表示中のタイトルだけ更新する
+  const [edit, setEdit] = useState(false);
+  const [v, setV] = useState(title);
+  const save = async () => {
+    const t = v.trim();
+    if (t && t !== cur) (await onSave(t), setCur(t));
+    setEdit(false);
+  };
+  if (!edit)
+    return (
+      <div className="group flex items-start gap-2">
+        <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{cur}</h1>
+        <Button variant="ghost" size="icon" className="mt-0.5 size-8 shrink-0 text-muted-foreground" aria-label="タイトルを編集" onClick={() => (setV(cur), setEdit(true))}><Pencil /></Button>
+      </div>
+    );
+  return (
+    <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(e) => (e.preventDefault(), save())}>
+      <Textarea autoFocus value={v} onChange={(e) => setV(e.target.value)} rows={2} className="min-h-0 font-serif text-lg"
+        onKeyDown={(e) => { if (e.key === "Escape") setEdit(false); if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) (e.preventDefault(), save()); }} />
+      <div className="flex gap-2 sm:flex-col">
+        <Button size="sm" disabled={!v.trim()}><Check />保存</Button>
+        <Button size="sm" type="button" variant="outline" onClick={() => setEdit(false)}>取消</Button>
+      </div>
+    </form>
   );
 }

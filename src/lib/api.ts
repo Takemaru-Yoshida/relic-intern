@@ -128,6 +128,15 @@ export async function getPdfUrl(id: string) {
   return b && URL.createObjectURL(b);
 }
 
+// 書誌情報の修正（タイトルなど）。TODO: supabase.from("documents").update(patch).eq("id", id)
+export async function updateDocument(id: string, patch: Partial<Pick<Doc, "title" | "authors" | "year" | "venue">>) {
+  const doc = (await load()).docs.find((d) => d.id === id);
+  if (!doc) return;
+  Object.assign(doc, patch);
+  await save();
+  return { ...doc };
+}
+
 export async function deleteDocument(id: string) {
   const s = await load();
   s.docs = s.docs.filter((d) => d.id !== id).map((d) => ({ ...d, cites: d.cites.filter((c) => c !== id) }));
