@@ -11,7 +11,7 @@ import { useAsync } from "@/lib/hooks";
 import type { Doc, GraphEdge } from "@/lib/types";
 
 const W = 800, H = 560;
-const palette = ["#2f4a9a", "#0f8a6a", "#c2410c", "#9333ea", "#0e7490", "#be185d"];
+const palette = ["#2f4a9a", "#0f8a6a", "#c2410c", "#9333ea", "#0e7490", "#be185d", "#a16207", "#4d7c0f"];
 
 // 簡易フォースレイアウト（反発 + ばね + 中心引力）
 function layout(docs: Doc[], edges: GraphEdge[]) {

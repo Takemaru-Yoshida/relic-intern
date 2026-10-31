@@ -9,7 +9,7 @@ import { useAsync } from "@/lib/hooks";
 
 const recentChecks = [
   { title: "修士論文 第2章 草稿", n: 18, bad: 3, v: "refuted" as const, at: "2 時間前" },
-  { title: "学会抄録（日本神経科学大会）", n: 6, bad: 0, v: "supported" as const, at: "昨日" },
+  { title: "学会抄録（人工知能学会全国大会）", n: 6, bad: 0, v: "supported" as const, at: "昨日" },
 ];
 
 export default function Dashboard() {

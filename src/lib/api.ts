@@ -7,10 +7,11 @@ const wait = <T,>(v: T, ms = 350) => new Promise<T>((r) => setTimeout(() => r(v)
 
 // --- 擬似 Embedding（モック）: 日英の簡易辞書 + 単語重なり。本番は bge-m3 のベクトル類似度 ---
 const dict: Record<string, string> = {
-  注意: "attention", 表象: "representation", 表現: "representation", 脳: "brain neural", 視覚: "visual",
-  深層: "deep", 学習: "learning training", 残差: "residual", 比較: "compar", 指標: "measure measures", 競合: "compete competition",
-  特徴: "feature", 検索: "retrieval", 生成: "generation", 正規化: "normalization", 循環: "circular",
-  ゲイン: "gain", 物体: "object", 相関: "correlation", 行列: "matrix", 層: "layer layers",
+  注意: "attention", 表現: "representation", 深層: "deep", 深い: "deep deeper", 学習: "learning", ネットワーク: "network networks", 防: "prevent reduces", 自動: "adaptive", 残差: "residual",
+  過学習: "overfitting regularization dropout", 正則化: "regularization regularizer", 最適化: "optimization", 学習率: "learning rates",
+  画像: "image images", 単語: "words", 列: "sequences", 生成: "generative generation", 敵対: "adversarial", 識別: "discriminative",
+  事前学習: "pre-train pre-trained", 言語: "language", 翻訳: "translation", 正規化: "normalization", 勾配: "gradient",
+  並列: "parallelizable", 分類: "classification classify", 層: "layer layers", 調整: "adaptive",
 };
 export const tokens = (s: string) => {
   let t = s.toLowerCase();

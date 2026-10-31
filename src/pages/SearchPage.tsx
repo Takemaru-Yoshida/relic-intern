@@ -9,7 +9,7 @@ import { PageHeader, Spinner, authorLine } from "@/components/shared";
 import { semanticSearch } from "@/lib/api";
 import { useAsync } from "@/lib/hooks";
 
-const examples = ["注意は脳の表象をどう変えるか", "モデルと脳を比較する方法", "深いネットワークを学習させる工夫", "解析の循環性を避けるには"];
+const examples = ["過学習を防ぐ方法", "画像を単語の列として扱う", "深いネットワークを学習させる工夫", "学習率を自動で調整する最適化"];
 
 export default function SearchPage() {
   const [params, setParams] = useSearchParams();

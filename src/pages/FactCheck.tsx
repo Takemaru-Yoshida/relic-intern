@@ -33,7 +33,7 @@ export default function FactCheck() {
             <Button variant="ghost" size="sm" onClick={() => setText(sampleManuscript)}><ClipboardPaste />サンプルを貼る</Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-[260px] font-serif" placeholder="例：Feature-based attention sharpens tuning curves (Treue & Martinez-Trujillo, 1999)." />
+            <Textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-[260px] font-serif" placeholder="例：Dropout removes units only at test time (Srivastava et al., 2014)." />
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-muted-foreground">(著者, 年) 形式の引用に対応</p>
               <Button onClick={run} disabled={!text.trim() || busy}>{busy ? <Loader2 className="animate-spin" /> : <ShieldCheck />}チェックする</Button>

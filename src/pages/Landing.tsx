@@ -19,8 +19,8 @@ const steps = [
 
 const preview = [
   { v: "supported" as const, claim: "残差学習により 152 層のネットワークを ImageNet で学習できた", cite: "He et al., 2016" },
-  { v: "refuted" as const, claim: "特徴ベース注意は MT ニューロンのチューニングを鋭くする", cite: "Treue & Martinez-Trujillo, 1999" },
-  { v: "not_found" as const, claim: "物体ベース注意は空間注意で完全に説明できる", cite: "Tanaka et al., 2021" },
+  { v: "refuted" as const, claim: "Dropout は学習中は全ユニットを使い、テスト時にだけユニットを落とす", cite: "Srivastava et al., 2014" },
+  { v: "not_found" as const, claim: "ViT は小規模データだけで学習しても CNN を上回る", cite: "Tanaka et al., 2021" },
 ];
 
 export default function Landing() {

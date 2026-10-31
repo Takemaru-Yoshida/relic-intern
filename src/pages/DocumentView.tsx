@@ -137,7 +137,7 @@ export default function DocumentView() {
             <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Search className="size-4 text-primary" />探したい文を探す</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <form onSubmit={find} className="flex gap-2">
-                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="例：比較に使う指標" />
+                <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="例：過学習を防ぐ方法" />
                 <Button size="icon" disabled={busy} aria-label="検索">{busy ? <Loader2 className="animate-spin" /> : <Highlighter />}</Button>
               </form>
               <p className="text-xs text-muted-foreground">意味が近い文に<span className="mark mx-1">黄色のマーカー</span>が付きます。日本語でも検索できます。</p>
