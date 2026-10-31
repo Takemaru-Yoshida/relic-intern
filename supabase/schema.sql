@@ -13,6 +13,7 @@ create table documents (
   pages int default 0,
   starred boolean not null default false,
   file_path text,                       -- storage: papers/{user_id}/{id}.pdf
+  imported_from text,                   -- 'doi' など
   embedding vector(1024),               -- 文献全体（要約）のベクトル：関連グラフ用
   created_at timestamptz not null default now()
 );

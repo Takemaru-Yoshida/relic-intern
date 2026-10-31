@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner, authorLine } from "@/components/shared";
 import { findInDocument, getDocument, listDocuments, pickKeySentences, rankSentences } from "@/lib/api";
 import { makeSamplePdf } from "@/lib/samplePdf";
+import { pdfSource } from "@/lib/doi";
 import { sentencesOf, type Mark } from "@/lib/pdf";
 import { useAsync } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,7 @@ export default function DocumentView() {
     setUrl(undefined); setLocal(false); setSents([]); setQueryMarks([]); setUserMarks([]); setHits([]);
     if (data.doc.file_url) setUrl(data.doc.file_url);
     else if (data.doc.lang === "en" && data.chunks.length) makeSamplePdf(data.doc, data.chunks).then(setUrl);
-    else setTab("text");
+    else setTab(data.chunks.length ? "text" : "pdf");
   }, [data]);
 
   useEffect(() => { if (chunkParam) { setFocus({ id: `chunk-${chunkParam}`, n: Date.now() }); tab === "text" && document.getElementById(chunkParam)?.scrollIntoView({ behavior: "smooth", block: "center" }); } }, [chunkParam, data, tab]);
@@ -81,7 +82,8 @@ export default function DocumentView() {
     tab === "text" && r[0] && document.getElementById(r[0].chunk_id)?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  const openLocal = (f?: File) => f && (setUrl(URL.createObjectURL(f)), setLocal(true), setSents([]), setQueryMarks([]), setUserMarks([]), setTab("pdf"));
+  // TODO: Supabase Storage へアップロードして file_path を保存
+  const openLocal = (f?: File) => f && (setUrl((doc.file_url = URL.createObjectURL(f))), setLocal(true), setSents([]), setQueryMarks([]), setUserMarks([]), setTab("pdf"));
 
   return (
     <>
@@ -91,19 +93,19 @@ export default function DocumentView() {
           <div className="mb-6 space-y-3 border-b pb-6">
             <div className="flex flex-wrap gap-1.5">{doc.tags.map((t) => <Badge key={t} variant="secondary">{t}</Badge>)}</div>
             <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{doc.title}</h1>
-            <p className="text-sm text-muted-foreground">{authorLine(doc)} · {doc.venue} · {doc.pages} ページ</p>
+            <p className="text-sm text-muted-foreground">{authorLine(doc)} · {doc.venue}{doc.pages > 0 && ` · ${doc.pages} ページ`}{doc.doi && ` · doi:${doc.doi}`}</p>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm"><Star className={cn(doc.starred && "fill-partial text-partial")} />お気に入り</Button>
               {doc.doi && <Button variant="outline" size="sm" asChild><a href={`https://doi.org/${doc.doi}`} target="_blank" rel="noreferrer"><ExternalLink />DOI</a></Button>}
               <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}><FileUp />手元の PDF を開く</Button>
               <input ref={fileRef} type="file" accept="application/pdf" hidden onChange={(e) => openLocal(e.target.files?.[0])} />
             </div>
-            <div className="rounded-md bg-secondary/60 p-4 text-sm leading-relaxed"><span className="mr-2 inline-flex items-center gap-1 font-semibold text-primary"><Sparkles className="size-4" />AI 要約</span>{doc.abstract}</div>
+            <div className="rounded-md bg-secondary/60 p-4 text-sm leading-relaxed"><span className="mr-2 inline-flex items-center gap-1 font-semibold text-primary"><Sparkles className="size-4" />{doc.imported_from ? "アブストラクト" : "AI 要約"}</span>{doc.abstract}</div>
           </div>
 
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
-              <TabsTrigger value="pdf" disabled={!url}><FileText />PDF</TabsTrigger>
+              <TabsTrigger value="pdf"><FileText />PDF</TabsTrigger>
               <TabsTrigger value="text" disabled={!chunks.length}><Type />テキスト</TabsTrigger>
             </TabsList>
             <TabsContent value="pdf">
@@ -112,8 +114,17 @@ export default function DocumentView() {
                   <PdfViewer url={url} marks={marks} focus={focus} onText={(p) => setSents(sentencesOf(p))} onLocate={setPageOf}
                     onSelectText={(text) => setUserMarks((m) => [...m, { id: `u${Date.now()}`, kind: "user", quote: text, note: text.slice(0, 40) }])} />
                 </Suspense>
+              ) : doc.imported_from && doc.doi ? (
+                <Card className="grid place-items-center gap-3 p-8 text-center text-sm">
+                  <FileText className="size-8 text-muted-foreground" />
+                  <p>この文献は DOI から追加したため、まだ PDF がありません。<br className="hidden sm:block" />PDF を入手して「手元の PDF を開く」で読み込むと、ハイライトや検索が使えます。</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button variant="outline" size="sm" asChild><a href={pdfSource(doc.doi).url} target="_blank" rel="noreferrer"><ExternalLink />{pdfSource(doc.doi).label}</a></Button>
+                    <Button size="sm" onClick={() => fileRef.current?.click()}><FileUp />手元の PDF を開く</Button>
+                  </div>
+                </Card>
               ) : <Spinner label="PDF を準備中…" />}
-              <p className="mt-2 text-xs text-muted-foreground">PDF 上の文字をドラッグして選択すると、自分でマーカーを引けます。</p>
+              {url && <p className="mt-2 text-xs text-muted-foreground">PDF 上の文字をドラッグして選択すると、自分でマーカーを引けます。</p>}
             </TabsContent>
             <TabsContent value="text">
               <div className="space-y-5 font-serif text-[15px] leading-8">

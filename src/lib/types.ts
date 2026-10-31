@@ -17,6 +17,7 @@ export interface Doc {
   created_at: string;
   cites: string[]; // document_relations(kind = 'cites')
   file_url?: string; // Storage の署名付き URL
+  imported_from?: "doi"; // DOI から追加（abstract は出版社のアブストラクト）
 }
 
 export interface Chunk {
