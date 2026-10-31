@@ -12,12 +12,12 @@ const dict: Record<string, string> = {
   特徴: "feature", 検索: "retrieval", 生成: "generation", 正規化: "normalization", 循環: "circular",
   ゲイン: "gain", 物体: "object", 相関: "correlation", 行列: "matrix", 層: "layer layers",
 };
-const tokens = (s: string) => {
+export const tokens = (s: string) => {
   let t = s.toLowerCase();
   for (const [ja, en] of Object.entries(dict)) if (t.includes(ja)) t += ` ${en} ${ja}`;
   return new Set(t.match(/[a-z0-9]{3,}|[぀-鿿]{2,}/g) ?? []);
 };
-const sim = (q: Set<string>, text: string) => {
+export const sim = (q: Set<string>, text: string) => {
   const t = tokens(text);
   const hit = [...q].filter((w) => [...t].some((x) => x.startsWith(w) || w.startsWith(x))).length;
   return q.size ? hit / q.size : 0;
@@ -39,7 +39,7 @@ export async function uploadDocument(file: File): Promise<Doc> {
   const doc: Doc = {
     id: crypto.randomUUID(), title: file.name.replace(/\.pdf$/i, ""), authors: ["（解析中）"], year: new Date().getFullYear(),
     venue: "—", abstract: "PDF を解析しています…", tags: [], lang: "en", status: "processing", pages: 0, starred: false,
-    created_at: new Date().toISOString(), cites: [],
+    created_at: new Date().toISOString(), cites: [], file_url: URL.createObjectURL(file),
   };
   docs.unshift(doc);
   return wait(doc, 600);
@@ -93,3 +93,15 @@ export async function getGraph(): Promise<{ docs: Doc[]; edges: GraphEdge[] }> {
   }
   return wait({ docs: docs.filter((d) => d.status === "indexed"), edges });
 }
+
+// PDF 本文の文から「探したい文」に近いものを選ぶ
+// TODO: RAG API の /search（document_id を指定）に置き換え、返ってきた chunk の本文でハイライトする
+export const rankSentences = <T extends { text: string }>(query: string, sents: T[], limit = 3) => {
+  const q = tokens(query);
+  const r = sents.map((s) => ({ ...s, score: sim(q, s.text) })).sort((a, b) => b.score - a.score);
+  return r.filter((s) => s.score > 0.15 && s.score >= r[0].score * 0.7).slice(0, limit);
+};
+
+// 重要文の抽出（モック）。TODO: アップロード時に LLM で抽出して highlights テーブルへ保存
+const cue = /\b(we (propose|present|show|find|demonstrate)|in this (paper|study)|our results?|results? (show|suggest|indicate))\b|本研究|明らかに/i;
+export const pickKeySentences = <T extends { text: string }>(sents: T[], limit = 6) => sents.filter((s) => cue.test(s.text)).slice(0, limit);

@@ -28,8 +28,10 @@ create index on chunks using hnsw (embedding vector_cosine_ops);
 create table highlights (
   id uuid primary key default gen_random_uuid(),
   document_id uuid not null references documents on delete cascade,
-  chunk_id uuid not null references chunks on delete cascade,
+  chunk_id uuid references chunks on delete cascade,   -- 手動マーカーは null 可
   kind text not null check (kind in ('ai_key','ai_query','user')),
+  quote text not null,                                   -- PDF 上の照合に使う原文
+  page int,
   reason text,
   created_at timestamptz not null default now()
 );

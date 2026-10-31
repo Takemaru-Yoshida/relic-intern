@@ -16,6 +16,7 @@ export interface Doc {
   starred: boolean;
   created_at: string;
   cites: string[]; // document_relations(kind = 'cites')
+  file_url?: string; // Storage の署名付き URL
 }
 
 export interface Chunk {

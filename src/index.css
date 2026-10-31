@@ -37,3 +37,11 @@
   .mark { background: linear-gradient(transparent 45%, hsl(var(--marker) / 0.85) 45%); @apply rounded-sm px-0.5; }
   .mark-ai { background: linear-gradient(transparent 45%, hsl(var(--verified) / 0.28) 45%); @apply rounded-sm px-0.5; }
 }
+
+/* PDF テキストレイヤー上の蛍光ペン */
+.pdf-view .textLayer { mix-blend-mode: multiply; }
+.pdf-view .textLayer mark { color: transparent; border-radius: 2px; padding: 0.15em 0; }
+.pdf-view .textLayer mark.hl-query { background: hsl(var(--marker) / 0.9); }
+.pdf-view .textLayer mark.hl-ai { background: hsl(var(--verified) / 0.35); }
+.pdf-view .textLayer mark.hl-user { background: hsl(330 90% 75% / 0.7); }
+.pdf-view .textLayer ::selection { background: hsl(var(--primary) / 0.25); }

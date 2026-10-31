@@ -16,6 +16,8 @@ npm run dev
 | スタイル | Tailwind CSS v3 + shadcn/ui（Radix UI） | `components.json` 同梱で `npx shadcn add` が使える |
 | ルーティング | React Router v6 | |
 | アイコン | lucide-react | shadcn/ui 標準 |
+| PDF 表示 | react-pdf（pdf.js） | テキストレイヤーに `<mark>` を差し込み蛍光ペン表示 |
+| デモ PDF 生成 | pdf-lib（動的 import） | モック本文から PDF をブラウザ内で生成 |
 | BaaS | Supabase（Auth / Postgres + pgvector / Storage） | スキーマは `supabase/schema.sql` |
 | RAG | Python（FastAPI）+ **BAAI/bge-m3**（無料・多言語・1024 次元） | Bolt の WebContainer では Python が動かないため別サービスとして配置 |
 
@@ -26,7 +28,7 @@ npm run dev
 /login, /signup        認証
 /app                   ダッシュボード
 ├─ /library            文献ライブラリ（PDF アップロード・タグ絞り込み）
-│  └─ /library/:id     文献ビューア（AI 重要文マーカー・「探したい文」ハイライト・関連文献）
+│  └─ /library/:id     文献ビューア（PDF / テキスト切替。PDF 上に AI 重要文・検索一致・手動の蛍光ペン）
 ├─ /search             意味検索（RAG、日英横断）
 ├─ /factcheck          引用ファクトチェック（支持 / 一部支持 / 矛盾 / 文献なし）
 ├─ /graph              関連グラフ（引用関係・内容の類似）
@@ -42,6 +44,7 @@ src/
   pages/               各画面
   lib/api.ts           データアクセス層（← Supabase 接続時はここだけ変更）
   lib/mock.ts          デモデータ
+  lib/pdf.ts           PDF テキストと引用文の照合 → ハイライト範囲
   lib/types.ts         型（schema.sql と対応）
   lib/supabase.ts      クライアント（.env 未設定ならデモモード）
 supabase/schema.sql    テーブル・RLS・match_chunks()
