@@ -1,6 +1,6 @@
 // DOI / arXiv ID から書誌情報を取得する（Crossref → DataCite の順。どちらもブラウザから直接呼べる CORS 対応 API）
 // TODO: Supabase 接続後は Edge Function 経由にし、OA の PDF（Unpaywall / arXiv）を Storage へ取り込んで RAG の /ingest に渡す
-import { docs } from "./mock";
+import { load, save } from "./store";
 import type { Doc } from "./types";
 
 // 入力（URL・"doi:"・arXiv ID など）を DOI に正規化する。arXiv ID は 10.48550/arXiv.XXXX に変換
@@ -13,7 +13,7 @@ export function normalizeId(raw: string) {
 
 export const parseIds = (text: string) => [...new Set(text.split(/[\s,;]+/).filter(Boolean))].map((raw) => ({ raw, doi: normalizeId(raw) }));
 
-export const findByDoi = (doi: string) => docs.find((d) => d.doi?.toLowerCase() === doi.toLowerCase());
+export const findByDoi = async (doi: string) => (await load()).docs.find((d) => d.doi?.toLowerCase() === doi.toLowerCase());
 
 const strip = (s = "") => s.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").replace(/^abstract\s*/i, "").trim();
 const base = (doi: string): Omit<Doc, "title" | "authors" | "year" | "venue" | "abstract" | "pages"> => ({
@@ -61,4 +61,7 @@ export const pdfSource = (doi: string) => {
   return ax ? { label: "arXiv で PDF を開く", url: `https://arxiv.org/pdf/${ax[1]}` } : { label: "出版社のページを開く", url: `https://doi.org/${doi}` };
 };
 
-export const addDocuments = (list: Doc[]) => docs.unshift(...list); // TODO: supabase.from("documents").insert(list)
+export async function addDocuments(list: Doc[]) {
+  (await load()).docs.push(...list); // TODO: supabase.from("documents").insert(list)
+  await save();
+}

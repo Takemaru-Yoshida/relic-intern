@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardPaste, Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
 import { PageHeader, VerdictBadge, authorLine, verdictMeta } from "@/components/shared";
 import { checkCitations } from "@/lib/api";
-import { sampleManuscript } from "@/lib/mock";
 import { cn } from "@/lib/utils";
 import type { CitationCheck, Verdict } from "@/lib/types";
 
@@ -30,7 +29,6 @@ export default function FactCheck() {
         <Card className="xl:sticky xl:top-8 xl:self-start">
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-base">原稿</CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => setText(sampleManuscript)}><ClipboardPaste />サンプルを貼る</Button>
           </CardHeader>
           <CardContent className="space-y-3">
             <Textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-[260px] font-serif" placeholder="例：Dropout removes units only at test time (Srivastava et al., 2014)." />
@@ -42,7 +40,7 @@ export default function FactCheck() {
         </Card>
 
         <div className="space-y-4">
-          {!res && !busy && <Card className="grid min-h-[200px] place-items-center p-8 text-center text-sm text-muted-foreground">結果はここに表示されます。<br />まずは「サンプルを貼る」で試してみてください。</Card>}
+          {!res && !busy && <Card className="grid min-h-[200px] place-items-center p-8 text-center text-sm text-muted-foreground">結果はここに表示されます。<br />引用文献の PDF をライブラリに登録しておくと、本文と照合できます。</Card>}
           {busy && <Card className="grid min-h-[200px] place-items-center p-8 text-sm text-muted-foreground"><span className="flex items-center gap-2"><Loader2 className="size-4 animate-spin" />引用文献の本文を検索して照合しています…</span></Card>}
           {res && !busy && (
             <>

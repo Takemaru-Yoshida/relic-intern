@@ -37,7 +37,7 @@ export default function Settings() {
           <CardHeader><CardTitle>システム情報</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between gap-4"><span className="text-muted-foreground">Embedding モデル</span><span className="text-right">BAAI/bge-m3（多言語・1024 次元）</span></div>
-            <div className="flex justify-between gap-4"><span className="text-muted-foreground">バックエンド</span>{supabase ? <Badge variant="verified">Supabase 接続済み</Badge> : <Badge variant="partial">デモモード（モックデータ）</Badge>}</div>
+            <div className="flex justify-between gap-4"><span className="text-muted-foreground">バックエンド</span>{supabase ? <Badge variant="verified">Supabase 接続済み</Badge> : <Badge variant="partial">ブラウザ内に保存（IndexedDB）</Badge>}</div>
           </CardContent>
         </Card>
       </div>

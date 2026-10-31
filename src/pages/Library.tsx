@@ -22,8 +22,11 @@ function DoiImport({ onDone }: { onDone: (d: Doc[]) => void }) {
   const [rows, setRows] = useState<Row[]>([]);
   const ok = rows.filter((r) => r.state === "ok");
 
-  const lookup = () => {
-    const init: Row[] = parseIds(text).map(({ raw, doi }) => ({ raw, doi, state: !doi ? "invalid" : findByDoi(doi) ? "dup" : "loading", doc: doi ? findByDoi(doi) : undefined }));
+  const lookup = async () => {
+    const init: Row[] = await Promise.all(parseIds(text).map(async ({ raw, doi }) => {
+      const dup = doi ? await findByDoi(doi) : undefined;
+      return { raw, doi, state: !doi ? "invalid" : dup ? "dup" : "loading", doc: dup } as Row;
+    }));
     setRows(init);
     init.forEach((r, i) => r.state === "loading" && lookupDoi(r.doi!)
       .then((doc) => ({ state: "ok" as const, doc }), () => ({ state: "error" as const, doc: undefined }))
@@ -54,7 +57,7 @@ function DoiImport({ onDone }: { onDone: (d: Doc[]) => void }) {
         </ul>
       )}
       <div className="flex justify-end">
-        <Button disabled={!ok.length || rows.some((r) => r.state === "loading")} onClick={() => (addDocuments(ok.map((r) => r.doc!)), onDone(ok.map((r) => r.doc!)), setRows([]), setText(""))}>
+        <Button disabled={!ok.length || rows.some((r) => r.state === "loading")} onClick={async () => (await addDocuments(ok.map((r) => r.doc!)), onDone(ok.map((r) => r.doc!)), setRows([]), setText(""))}>
           {ok.length ? `${ok.length} 件を追加` : "追加"}
         </Button>
       </div>
@@ -142,7 +145,7 @@ export default function Library() {
       </div>
       {loading ? <Spinner /> : shown!.length ? (
         <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">{shown!.map((d) => <DocCard key={d.id} doc={d} />)}</div>
-      ) : <p className="py-16 text-center text-sm text-muted-foreground">該当する文献がありません</p>}
+      ) : <p className="py-16 text-center text-sm text-muted-foreground">{docs?.length ? "該当する文献がありません" : "まだ文献がありません。「文献を追加」から PDF をアップロードするか、DOI で追加してください。"}</p>}
     </>
   );
 }

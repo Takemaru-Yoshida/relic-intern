@@ -1,7 +1,7 @@
 # DocMeg — AI時代の新たなファクトチェック
 
 論文の管理・意味検索（RAG）・AI マーカー・関連グラフ・**引用ファクトチェック**をひとつにした文献管理アプリ。
-現在は **UI のみ**（モックデータで動作）。Supabase / Python RAG API への接続は `src/lib/api.ts` の中身を差し替えるだけで行える構成です。
+現在は **フロントエンドのみ**。追加した文献・PDF・本文はブラウザ内（IndexedDB）に保存されます。Supabase / Python RAG API への接続は `src/lib/api.ts` の中身を差し替えるだけで行える構成です。
 
 ```bash
 npm install
@@ -17,7 +17,7 @@ npm run dev
 | ルーティング | React Router v6 | |
 | アイコン | lucide-react | shadcn/ui 標準 |
 | PDF 表示 | react-pdf（pdf.js） | テキストレイヤーに `<mark>` を差し込み蛍光ペン表示 |
-| デモ PDF 生成 | pdf-lib（動的 import） | モック本文から PDF をブラウザ内で生成 |
+| 保存（暫定） | IndexedDB（idb-keyval） | Supabase 接続までの間、ブラウザ内に文献・PDF・本文を保存 |
 | BaaS | Supabase（Auth / Postgres + pgvector / Storage） | スキーマは `supabase/schema.sql` |
 | RAG | Python（FastAPI）+ **BAAI/bge-m3**（無料・多言語・1024 次元） | Bolt の WebContainer では Python が動かないため別サービスとして配置 |
 
@@ -43,9 +43,10 @@ src/
   components/layout/   サイドバー（PC）/ ドロワー（スマホ）
   pages/               各画面
   lib/api.ts           データアクセス層（← Supabase 接続時はここだけ変更）
-  lib/mock.ts          デモデータ
+  lib/store.ts         ブラウザ内ストア（IndexedDB）
+  lib/doi.ts           DOI / arXiv ID からの書誌情報取得
   lib/pdf.ts           PDF テキストと引用文の照合 → ハイライト範囲
   lib/types.ts         型（schema.sql と対応）
-  lib/supabase.ts      クライアント（.env 未設定ならデモモード）
+  lib/supabase.ts      クライアント（.env 未設定ならブラウザ内保存で動作）
 supabase/schema.sql    テーブル・RLS・match_chunks()
 ```

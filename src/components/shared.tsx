@@ -26,7 +26,7 @@ export const VerdictBadge = ({ v }: { v: Verdict }) => {
   return <Badge variant={variant}><Icon className="size-3.5" />{label}</Badge>;
 };
 
-export const authorLine = (d: Doc) => (d.authors.length > 2 ? `${d.authors[0]} ほか` : d.authors.join(", ")) + ` (${d.year})`;
+export const authorLine = (d: Doc) => (!d.authors.length ? "著者不明" : d.authors.length > 2 ? `${d.authors[0]} ほか` : d.authors.join(", ")) + (d.year ? ` (${d.year})` : "");
 
 export const DocCard = ({ doc }: { doc: Doc }) => (
   <Link to={`/app/library/${doc.id}`}>

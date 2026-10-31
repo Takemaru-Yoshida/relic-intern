@@ -1,23 +1,18 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, Network, Search, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowRight, BookOpen, FileText, Layers, Network, Search, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DocCard, PageHeader, Spinner, VerdictBadge } from "@/components/shared";
+import { DocCard, PageHeader, Spinner } from "@/components/shared";
 import { UploadDialog } from "./Library";
 import { listDocuments } from "@/lib/api";
 import { useAsync } from "@/lib/hooks";
 
-const recentChecks = [
-  { title: "修士論文 第2章 草稿", n: 18, bad: 3, v: "refuted" as const, at: "2 時間前" },
-  { title: "学会抄録（人工知能学会全国大会）", n: 6, bad: 0, v: "supported" as const, at: "昨日" },
-];
-
 export default function Dashboard() {
-  const { data: docs, loading } = useAsync(listDocuments);
+  const { data: docs, loading, setData } = useAsync(listDocuments);
   const stats = [
     { label: "登録文献", value: docs?.length ?? "–", icon: BookOpen },
-    { label: "チェック済みの引用", value: 24, icon: ShieldCheck },
-    { label: "要確認の引用", value: 3, icon: ShieldAlert, warn: true },
+    { label: "PDF 保存済み", value: docs?.filter((d) => d.has_pdf).length ?? "–", icon: FileText },
+    { label: "総ページ数", value: docs?.reduce((n, d) => n + d.pages, 0) ?? "–", icon: Layers },
   ];
   const actions = [
     { to: "/app/factcheck", icon: ShieldCheck, t: "原稿の引用をチェック", d: "AI が書いた文章の引用を原文と照合" },
@@ -26,11 +21,11 @@ export default function Dashboard() {
   ];
   return (
     <>
-      <PageHeader title="ダッシュボード" desc="おかえりなさい。今日も確かな引用を。"><UploadDialog /></PageHeader>
+      <PageHeader title="ダッシュボード" desc="おかえりなさい。今日も確かな引用を。"><UploadDialog onUploaded={(d) => setData((p) => [d, ...(p ?? []).filter((x) => x.id !== d.id)])} /></PageHeader>
       <div className="grid gap-4 sm:grid-cols-3">
-        {stats.map(({ label, value, icon: Icon, warn }) => (
+        {stats.map(({ label, value, icon: Icon }) => (
           <Card key={label} className="flex items-center gap-4 p-5">
-            <span className={`grid size-11 place-items-center rounded-md ${warn ? "bg-refuted/10 text-refuted" : "bg-secondary text-primary"}`}><Icon className="size-5" /></span>
+            <span className="grid size-11 place-items-center rounded-md bg-secondary text-primary"><Icon className="size-5" /></span>
             <div><p className="text-2xl font-bold">{value}</p><p className="text-xs text-muted-foreground">{label}</p></div>
           </Card>
         ))}
@@ -55,18 +50,18 @@ export default function Dashboard() {
             <Button variant="link" size="sm" asChild><Link to="/app/library">すべて見る</Link></Button>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
-            {loading ? <Spinner /> : docs!.slice(0, 4).map((d) => <DocCard key={d.id} doc={d} />)}
+            {loading ? <Spinner /> : docs!.length ? docs!.slice(0, 4).map((d) => <DocCard key={d.id} doc={d} />) : <p className="py-8 text-center text-sm text-muted-foreground sm:col-span-2">まだ文献がありません。「文献を追加」から PDF をアップロードしてください。</p>}
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>最近のファクトチェック</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {recentChecks.map((c) => (
-              <Link key={c.title} to="/app/factcheck" className="block rounded-md border p-3 hover:bg-muted/50">
-                <div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-medium">{c.title}</p><VerdictBadge v={c.v} /></div>
-                <p className="mt-1 text-xs text-muted-foreground">引用 {c.n} 件 · 要確認 {c.bad} 件 · {c.at}</p>
-              </Link>
-            ))}
+          <CardHeader><CardTitle>はじめかた</CardTitle></CardHeader>
+          <CardContent>
+            <ol className="space-y-3 text-sm">
+              {["「文献を追加」から論文の PDF をアップロード（DOI からも追加できます）", "文献を開き、PDF 上の重要文や探したい文にマーカーを付ける", "AI が書いた原稿を「引用ファクトチェック」に貼り、引用を原文と照合する"].map((t, i) => (
+                <li key={i} className="flex gap-3"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-secondary text-xs font-bold text-primary">{i + 1}</span>{t}</li>
+              ))}
+            </ol>
+            <p className="mt-4 text-xs text-muted-foreground">追加した文献と PDF は、このブラウザ内に保存されます。</p>
           </CardContent>
         </Card>
       </div>

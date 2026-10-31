@@ -78,28 +78,59 @@ export const sentencesOf = (pages: PageText[]) =>
 // タイトル検出：① PDF メタデータの Title（それらしい場合のみ）② 1 ページ目の上半分で最も大きい文字の行
 const junkTitle = /^(untitled|microsoft (word|powerpoint)|.*\.(pdf|docx?|tex|dvi|ps)$|paper|manuscript|main|document\d*)$/i;
 
-export async function detectTitle(file: File): Promise<string | null> {
+type Info = Record<string, unknown>;
+
+function titleFromInfo(info: Info) {
+  const t = String(info.Title ?? "").trim();
+  return t.length >= 8 && !junkTitle.test(t) && !/^microsoft /i.test(t) ? t : null;
+}
+
+async function titleFromLayout(pdf: PDFDocumentProxy) {
+  const page = await pdf.getPage(1);
+  const { height } = page.getViewport({ scale: 1 });
+  const items = (await page.getTextContent()).items
+    .filter((it): it is Extract<typeof it, { str: string }> => "str" in it && !!it.str.trim())
+    .filter((it) => Math.abs(it.transform[1]) < 0.01 && Math.abs(it.transform[2]) < 0.01) // 回転文字（arXiv の透かし等）を除く
+    .map((it) => ({ str: it.str, size: Math.abs(it.transform[3]), y: it.transform[5] }))
+    .filter((it) => it.y > height * 0.4);
+  const max = Math.max(...items.filter((it) => it.str.trim().length > 3).map((it) => it.size));
+  if (!isFinite(max)) return null;
+  // 最大サイズの文字を上から拾い、行間が大きく空いたら打ち切る
+  const big = items.filter((it) => it.size >= max * 0.9).sort((a, b) => b.y - a.y);
+  const lines: typeof big = [];
+  for (const it of big) if (!lines.length || lines[lines.length - 1].y - it.y < max * 2.5) lines.push(it); else break;
+  const title = lines.map((l) => l.str).join(" ").replace(/-\s+(?=\p{Ll})/gu, "").replace(/\s+/g, " ").trim();
+  return title.length >= 4 ? title.slice(0, 300) : null;
+}
+
+// 本文をページごとに 600 字程度のまとまり（chunk）に分ける
+const toChunks = (pages: PageText[]) =>
+  pages.flatMap((p, i) => {
+    const out: string[] = [];
+    for (const s of p.text.split(/(?<=[.!?。])\s+/)) {
+      if (out.length && out[out.length - 1].length + s.length < 600) out[out.length - 1] += " " + s;
+      else out.push(s);
+    }
+    return out.map((t) => t.trim()).filter((t) => t.length > 20).map((content) => ({ page: i + 1, content }));
+  });
+
+// アップロード時の解析：タイトル・著者・年（メタデータにあれば）と本文 chunk
+export async function analyzePdf(file: Blob) {
   const { pdfjs } = await import("./pdfjs");
   const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   try {
-    const meta = String(((await pdf.getMetadata()).info as { Title?: string })?.Title ?? "").trim();
-    if (meta.length >= 8 && !junkTitle.test(meta) && !/^microsoft /i.test(meta)) return meta;
-
-    const page = await pdf.getPage(1);
-    const { height } = page.getViewport({ scale: 1 });
-    const items = (await page.getTextContent()).items
-      .filter((it): it is Extract<typeof it, { str: string }> => "str" in it && !!it.str.trim())
-      .filter((it) => Math.abs(it.transform[1]) < 0.01 && Math.abs(it.transform[2]) < 0.01) // 回転文字（arXiv の透かし等）を除く
-      .map((it) => ({ str: it.str, size: Math.abs(it.transform[3]), y: it.transform[5] }))
-      .filter((it) => it.y > height * 0.4);
-    const max = Math.max(...items.filter((it) => it.str.trim().length > 3).map((it) => it.size));
-    if (!isFinite(max)) return null;
-    // 最大サイズの文字を上から拾い、行間が大きく空いたら打ち切る
-    const big = items.filter((it) => it.size >= max * 0.9).sort((a, b) => b.y - a.y);
-    const lines: typeof big = [];
-    for (const it of big) if (!lines.length || lines[lines.length - 1].y - it.y < max * 2.5) lines.push(it); else break;
-    const title = lines.map((l) => l.str).join(" ").replace(/-\s+(?=\p{Ll})/gu, "").replace(/\s+/g, " ").trim();
-    return title.length >= 4 ? title.slice(0, 300) : null;
+    const info = ((await pdf.getMetadata()).info ?? {}) as Info;
+    const custom = (info.Custom ?? {}) as Info; // PDF 独自の項目（Published / Book など）
+    const author = String(info.Author ?? "").trim();
+    const year = Number(String(custom.Published ?? custom.Date ?? "").match(/^(19|20)\d{2}/)?.[0] ?? 0);
+    return {
+      title: titleFromInfo(info) ?? (await titleFromLayout(pdf)),
+      authors: /\p{L}+ \p{L}+/u.test(author) ? author.split(/\s*(?:,|;| and )\s*/).filter(Boolean) : [],
+      year,
+      venue: String(custom.Book ?? custom.Journal ?? "").trim() || null,
+      pages: pdf.numPages,
+      chunks: toChunks(await extractPages(pdf)),
+    };
   } finally {
     pdf.destroy();
   }

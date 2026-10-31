@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ExternalLink, FileText, FileUp, Highlighter, Loader2, Search, Sparkles, Star, Type, X } from "lucide-react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft, ExternalLink, FileText, FileUp, Highlighter, Loader2, Search, Sparkles, Star, Trash2, Type, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Switch, Label } from "@/components/ui/misc";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner, authorLine } from "@/components/shared";
-import { findInDocument, getDocument, listDocuments, pickKeySentences, rankSentences } from "@/lib/api";
-import { makeSamplePdf } from "@/lib/samplePdf";
+import { attachPdf, deleteDocument, findInDocument, getDocument, getPdfUrl, listDocuments, pickKeySentences, rankSentences } from "@/lib/api";
 import { pdfSource } from "@/lib/doi";
 import { sentencesOf, type Mark } from "@/lib/pdf";
 import { useAsync } from "@/lib/hooks";
@@ -23,7 +22,8 @@ const kindLabel = { ai: "AI 重要文", query: "検索一致", user: "自分の�
 export default function DocumentView() {
   const { id = "" } = useParams();
   const [params] = useSearchParams();
-  const { data, loading } = useAsync(() => getDocument(id), [id]);
+  const nav = useNavigate();
+  const { data, loading, setData } = useAsync(() => getDocument(id), [id]);
   const { data: all } = useAsync(listDocuments);
   const [showAi, setShowAi] = useState(true);
   const [q, setQ] = useState("");
@@ -36,29 +36,29 @@ export default function DocumentView() {
   const [pageOf, setPageOf] = useState<Record<string, number>>({});
   const [focus, setFocus] = useState<{ id: string; n: number }>();
   const [tab, setTab] = useState("pdf");
-  const [local, setLocal] = useState(false); // 手元の PDF を開いているか
   const fileRef = useRef<HTMLInputElement>(null);
   const chunkParam = params.get("chunk");
 
-  // PDF の用意：アップロード済みならその URL、デモ文献は本文から生成
+  // 保存済みの PDF を IndexedDB から読み出して表示
   useEffect(() => {
     if (!data?.doc) return;
-    setUrl(undefined); setLocal(false); setSents([]); setQueryMarks([]); setUserMarks([]); setHits([]);
-    if (data.doc.file_url) setUrl(data.doc.file_url);
-    else if (data.doc.lang === "en" && data.chunks.length) makeSamplePdf(data.doc, data.chunks).then(setUrl);
-    else setTab(data.chunks.length ? "text" : "pdf");
+    let u: string | undefined;
+    setUrl(undefined); setSents([]); setQueryMarks([]); setUserMarks([]); setHits([]);
+    setTab(data.doc.has_pdf || !data.chunks.length ? "pdf" : "text");
+    if (data.doc.has_pdf) getPdfUrl(data.doc.id).then((x) => setUrl((u = x)));
+    return () => { u && URL.revokeObjectURL(u); };
   }, [data]);
 
   useEffect(() => { if (chunkParam) { setFocus({ id: `chunk-${chunkParam}`, n: Date.now() }); tab === "text" && document.getElementById(chunkParam)?.scrollIntoView({ behavior: "smooth", block: "center" }); } }, [chunkParam, data, tab]);
 
   const marks = useMemo<Mark[]>(() => {
     if (!data) return [];
-    const ai: Mark[] = !showAi ? [] : data.highlights.length && !local
+    const ai: Mark[] = !showAi ? [] : data.highlights.length
       ? data.highlights.map((h) => ({ id: h.id, kind: "ai", quote: data.chunks.find((c) => c.id === h.chunk_id)!.content, note: h.reason }))
       : pickKeySentences(sents).map((s, i) => ({ id: `ai${i}`, kind: "ai", quote: s.text }));
-    const linked = !local && data.chunks.find((c) => c.id === chunkParam);
+    const linked = data.chunks.find((c) => c.id === chunkParam);
     return [...ai, ...userMarks, ...queryMarks, ...(linked ? [{ id: `chunk-${linked.id}`, kind: "query" as const, quote: linked.content, note: "リンク元の一節" }] : [])];
-  }, [data, showAi, sents, userMarks, queryMarks, chunkParam, local]);
+  }, [data, showAi, sents, userMarks, queryMarks, chunkParam]);
 
   if (loading) return <Spinner />;
   if (!data?.doc) return <p className="py-16 text-center text-muted-foreground">文献が見つかりません</p>;
@@ -82,8 +82,18 @@ export default function DocumentView() {
     tab === "text" && r[0] && document.getElementById(r[0].chunk_id)?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  // TODO: Supabase Storage へアップロードして file_path を保存
-  const openLocal = (f?: File) => f && (setUrl((doc.file_url = URL.createObjectURL(f))), setLocal(true), setSents([]), setQueryMarks([]), setUserMarks([]), setTab("pdf"));
+  // 手元の PDF をこの文献に保存する（DOI から追加した文献など）
+  const openLocal = async (f?: File) => {
+    if (!f) return;
+    await attachPdf(doc.id, f);
+    setData(await getDocument(doc.id));
+  };
+
+  const remove = async () => {
+    if (!confirm(`「${doc.title}」を削除します。保存した PDF も消えます。よろしいですか？`)) return;
+    await deleteDocument(doc.id);
+    nav("/app/library");
+  };
 
   return (
     <>
@@ -97,7 +107,8 @@ export default function DocumentView() {
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm"><Star className={cn(doc.starred && "fill-partial text-partial")} />お気に入り</Button>
               {doc.doi && <Button variant="outline" size="sm" asChild><a href={`https://doi.org/${doc.doi}`} target="_blank" rel="noreferrer"><ExternalLink />DOI</a></Button>}
-              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}><FileUp />手元の PDF を開く</Button>
+              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}><FileUp />{doc.has_pdf ? "PDF を差し替える" : "PDF を追加"}</Button>
+              <Button variant="outline" size="sm" className="text-refuted hover:text-refuted" onClick={remove}><Trash2 />削除</Button>
               <input ref={fileRef} type="file" accept="application/pdf" hidden onChange={(e) => openLocal(e.target.files?.[0])} />
             </div>
             {doc.abstract && <div className="rounded-md bg-secondary/60 p-4 text-sm leading-relaxed"><span className="mr-2 inline-flex items-center gap-1 font-semibold text-primary"><Sparkles className="size-4" />{doc.imported_from ? "アブストラクト" : "AI 要約"}</span>{doc.abstract}</div>}
@@ -114,13 +125,13 @@ export default function DocumentView() {
                   <PdfViewer url={url} marks={marks} focus={focus} onText={(p) => setSents(sentencesOf(p))} onLocate={setPageOf}
                     onSelectText={(text) => setUserMarks((m) => [...m, { id: `u${Date.now()}`, kind: "user", quote: text, note: text.slice(0, 40) }])} />
                 </Suspense>
-              ) : doc.imported_from && doc.doi ? (
+              ) : !doc.has_pdf ? (
                 <Card className="grid place-items-center gap-3 p-8 text-center text-sm">
                   <FileText className="size-8 text-muted-foreground" />
-                  <p>この文献は DOI から追加したため、まだ PDF がありません。<br className="hidden sm:block" />PDF を入手して「手元の PDF を開く」で読み込むと、ハイライトや検索が使えます。</p>
+                  <p>この文献にはまだ PDF がありません。<br className="hidden sm:block" />PDF を入手して「PDF を追加」で保存すると、ハイライトや検索が使えます。</p>
                   <div className="flex flex-wrap justify-center gap-2">
-                    <Button variant="outline" size="sm" asChild><a href={pdfSource(doc.doi).url} target="_blank" rel="noreferrer"><ExternalLink />{pdfSource(doc.doi).label}</a></Button>
-                    <Button size="sm" onClick={() => fileRef.current?.click()}><FileUp />手元の PDF を開く</Button>
+                    {doc.doi && <Button variant="outline" size="sm" asChild><a href={pdfSource(doc.doi).url} target="_blank" rel="noreferrer"><ExternalLink />{pdfSource(doc.doi).label}</a></Button>}
+                    <Button size="sm" onClick={() => fileRef.current?.click()}><FileUp />PDF を追加</Button>
                   </div>
                 </Card>
               ) : <Spinner label="PDF を準備中…" />}

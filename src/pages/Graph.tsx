@@ -44,6 +44,12 @@ export default function Graph() {
   const tags = useMemo(() => [...new Set(data?.docs.map((d) => d.tags[0]))], [data]);
 
   if (loading || !data || !pos) return <Spinner />;
+  if (!data.docs.length) return (
+    <>
+      <PageHeader title="関連グラフ" />
+      <p className="py-16 text-center text-sm text-muted-foreground">文献を追加すると、引用関係と内容の近さからグラフが作られます。</p>
+    </>
+  );
   const edges = data.edges.filter((e) => show[e.kind]);
   const nb = new Set(sel ? edges.flatMap((e) => (e.source === sel ? [e.target] : e.target === sel ? [e.source] : [])) : []);
   const doc = data.docs.find((d) => d.id === sel);
@@ -63,7 +69,7 @@ export default function Graph() {
               </div>
             ))}
             <div className="flex flex-wrap gap-2 sm:ml-auto">
-              {tags.map((t, i) => <span key={t} className="flex items-center gap-1 text-xs text-muted-foreground"><i className="size-2.5 rounded-full" style={{ background: palette[i % palette.length] }} />{t}</span>)}
+              {tags.map((t, i) => <span key={t ?? "none"} className="flex items-center gap-1 text-xs text-muted-foreground"><i className="size-2.5 rounded-full" style={{ background: palette[i % palette.length] }} />{t ?? "タグなし"}</span>)}
             </div>
           </div>
           <svg viewBox={`0 0 ${W} ${H}`} className="aspect-[10/7] w-full touch-manipulation bg-[radial-gradient(hsl(var(--border))_1px,transparent_1px)] [background-size:20px_20px]" onClick={() => setSel(null)}>
@@ -77,7 +83,7 @@ export default function Graph() {
               return (
                 <g key={d.id} transform={`translate(${x},${y})`} opacity={dim ? 0.25 : 1} className="cursor-pointer" onClick={(e) => (e.stopPropagation(), setSel(d.id))}>
                   <circle r={r} fill={color(d)} stroke={sel === d.id ? "#facc15" : "#fff"} strokeWidth={sel === d.id ? 4 : 2} />
-                  <text y={r + 16} textAnchor="middle" fontSize="15" fill="currentColor" className="pointer-events-none select-none">{d.authors[0].split(" ").pop()} {d.year}</text>
+                  <text y={r + 16} textAnchor="middle" fontSize="15" fill="currentColor" className="pointer-events-none select-none">{d.authors[0]?.split(" ").pop() ?? (d.title.length > 18 ? d.title.slice(0, 18) + "…" : d.title)}{d.year ? ` ${d.year}` : ""}</text>
                 </g>
               );
             })}
