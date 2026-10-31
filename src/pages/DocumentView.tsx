@@ -100,7 +100,7 @@ export default function DocumentView() {
               <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}><FileUp />手元の PDF を開く</Button>
               <input ref={fileRef} type="file" accept="application/pdf" hidden onChange={(e) => openLocal(e.target.files?.[0])} />
             </div>
-            <div className="rounded-md bg-secondary/60 p-4 text-sm leading-relaxed"><span className="mr-2 inline-flex items-center gap-1 font-semibold text-primary"><Sparkles className="size-4" />{doc.imported_from ? "アブストラクト" : "AI 要約"}</span>{doc.abstract}</div>
+            {doc.abstract && <div className="rounded-md bg-secondary/60 p-4 text-sm leading-relaxed"><span className="mr-2 inline-flex items-center gap-1 font-semibold text-primary"><Sparkles className="size-4" />{doc.imported_from ? "アブストラクト" : "AI 要約"}</span>{doc.abstract}</div>}
           </div>
 
           <Tabs value={tab} onValueChange={setTab}>

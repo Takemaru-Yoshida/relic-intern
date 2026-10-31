@@ -39,7 +39,7 @@ export async function uploadDocument(file: File): Promise<Doc> {
   // TODO: supabase.storage.from("papers").upload(...) → RAG API の /ingest を呼んで分割・埋め込み
   const doc: Doc = {
     id: crypto.randomUUID(), title: file.name.replace(/\.pdf$/i, ""), authors: ["（解析中）"], year: new Date().getFullYear(),
-    venue: "—", abstract: "PDF を解析しています…", tags: [], lang: "en", status: "processing", pages: 0, starred: false,
+    venue: "—", abstract: "", tags: [], lang: "en", status: "processing", pages: 0, starred: false,
     created_at: new Date().toISOString(), cites: [], file_url: URL.createObjectURL(file),
   };
   docs.unshift(doc);
