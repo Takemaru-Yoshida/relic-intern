@@ -37,8 +37,10 @@ export const getDocument = (id: string) =>
 
 export async function uploadDocument(file: File): Promise<Doc> {
   // TODO: supabase.storage.from("papers").upload(...) → RAG API の /ingest を呼んで分割・埋め込み
+  const { detectTitle } = await import("./pdf");
+  const title = await detectTitle(file).catch(() => null);
   const doc: Doc = {
-    id: crypto.randomUUID(), title: file.name.replace(/\.pdf$/i, ""), authors: ["（解析中）"], year: new Date().getFullYear(),
+    id: crypto.randomUUID(), title: title ?? file.name.replace(/\.pdf$/i, ""), authors: ["（解析中）"], year: new Date().getFullYear(),
     venue: "—", abstract: "", tags: [], lang: "en", status: "processing", pages: 0, starred: false,
     created_at: new Date().toISOString(), cites: [], file_url: URL.createObjectURL(file),
   };

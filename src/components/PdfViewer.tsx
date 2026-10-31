@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import { Document, Page } from "react-pdf";
+import "@/lib/pdfjs";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { Highlighter, Loader2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buildRanges, extractPages, renderItem, type Mark } from "@/lib/pdf";
-
-pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
 type Pages = Awaited<ReturnType<typeof extractPages>>;
 
