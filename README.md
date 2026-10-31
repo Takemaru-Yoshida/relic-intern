@@ -19,8 +19,8 @@ npm run dev
 | PDF 表示 | react-pdf（pdf.js） | テキストレイヤーに `<mark>` を差し込み蛍光ペン表示 |
 | 保存（暫定） | IndexedDB（idb-keyval） | Supabase 接続までの間、ブラウザ内に文献・PDF・本文を保存 |
 | BaaS | Supabase（Auth / Postgres + pgvector / Storage） | スキーマは `supabase/schema.sql` |
-| 埋め込み（現在） | **Transformers.js + BAAI/bge-m3**（`Xenova/bge-m3`、int8、ブラウザ内・Web Worker） | サーバー不要。設定で multilingual-e5-small（軽量）に切替可 |
-| RAG（予定） | Python（FastAPI）+ BAAI/bge-m3 | 同じモデルなので、ブラウザで計算したベクトルと互換 |
+| 埋め込み（現在） | **Transformers.js + multilingual-e5-small**（`Xenova/multilingual-e5-small`、int8、ブラウザ内・Web Worker） | サーバー不要で軽量。設定で BAAI/bge-m3（高精度・重い）に切替可 |
+| RAG（予定） | Python（FastAPI）+ BAAI/bge-m3 | サーバー側で高精度なベクトルを計算 |
 
 ## サイトマップ
 

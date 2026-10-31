@@ -1,11 +1,13 @@
 // ブラウザ内の埋め込みモデル（Transformers.js / ONNX）。初回はモデルをダウンロードし、以後はブラウザにキャッシュされる
 export const MODELS = {
-  "Xenova/bge-m3": { label: "BAAI/bge-m3", note: "多言語・高精度（推奨）", size: "約 570MB", dim: 1024, pooling: "cls", query: "", passage: "" },
-  "Xenova/multilingual-e5-small": { label: "multilingual-e5-small", note: "多言語・軽量", size: "約 120MB", dim: 384, pooling: "mean", query: "query: ", passage: "passage: " },
+  "Xenova/multilingual-e5-small": { label: "multilingual-e5-small", note: "多言語・軽量（既定）", size: "約 120MB", dim: 384, pooling: "mean", query: "query: ", passage: "passage: ", min: 0.78, support: 0.87, graph: 0.85 },
+  "Xenova/bge-m3": { label: "BAAI/bge-m3", note: "多言語・高精度（重い）", size: "約 570MB", dim: 1024, pooling: "cls", query: "", passage: "", min: 0.4, support: 0.75, graph: 0.55 },
 } as const;
+// min：検索結果に出す下限 / support：ファクトチェックで「支持」とする下限 / graph：関連グラフで結ぶ下限（モデルごとに類似度の分布が違うため）
 export type ModelId = keyof typeof MODELS;
 const KEY = "docmeg:embed-model";
-export const getModel = (): ModelId => (localStorage.getItem(KEY) as ModelId) in MODELS ? (localStorage.getItem(KEY) as ModelId) : "Xenova/bge-m3";
+export const modelInfo = () => MODELS[getModel()];
+export const getModel = (): ModelId => (localStorage.getItem(KEY) as ModelId) in MODELS ? (localStorage.getItem(KEY) as ModelId) : "Xenova/multilingual-e5-small";
 export const setModel = (m: ModelId) => localStorage.setItem(KEY, m);
 
 // 進捗（モデルのダウンロード・ベクトル化）を UI に通知

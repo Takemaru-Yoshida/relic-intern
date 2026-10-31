@@ -1,7 +1,7 @@
 // データアクセス層。UI はこのファイルの関数だけを呼ぶ。
 // Supabase / Python RAG API への接続時は各関数の中身だけを差し替える（TODO コメント参照）。
 import { delPdf, getPdf, load, putPdf, save } from "./store";
-import { dot, embed, getModel, mean } from "./embed";
+import { dot, embed, getModel, mean, modelInfo } from "./embed";
 import type { CitationCheck, Doc, GraphEdge, Highlight, SearchHit } from "./types";
 
 // --- キーワード検索（予備）: 埋め込みモデルを使えないとき（オフライン・未計算）に使う日英の簡易辞書 + 単語重なり ---
@@ -95,7 +95,7 @@ async function bestSentences(query: string, texts: string[], limit: number) {
   const v = s.docs.some((d) => d.embed_model === model) ? await Promise.all([embed([query], "query"), embed(cand, "passage")]).catch(() => null) : null;
   const q = tokens(query);
   const scored = cand.map((text, i) => ({ text, score: v ? dot(v[0][0], v[1][i]) : sim(q, text) })).sort((a, b) => b.score - a.score);
-  return scored.filter((x) => x.score >= scored[0].score * 0.9).slice(0, limit);
+  return scored.filter((x) => x.score >= scored[0].score - (v ? 0.04 : 0.1)).slice(0, limit);
 }
 
 export async function findSentences(docId: string, query: string, limit = 3) {
@@ -141,7 +141,7 @@ export async function semanticSearch(query: string, opts: { docIds?: string[]; l
   return s.chunks
     .filter((c) => !opts.docIds || opts.docIds.includes(c.document_id))
     .map((c) => ({ chunk: c, doc: s.docs.find((d) => d.id === c.document_id)!, score: score(c) }))
-    .filter((h) => h.doc && h.score > (opts.min ?? 0.4))
+    .filter((h) => h.doc && h.score > (opts.min ?? (s.docs.some((d) => d.embed_model === getModel()) ? modelInfo().min : 0.4)))
     .sort((a, b) => b.score - a.score)
     .slice(0, opts.limit ?? 20);
 }
@@ -172,7 +172,7 @@ export async function checkCitations(text: string): Promise<CitationCheck[]> {
     const evidence = top && { ...top.chunk, content: best?.text ?? top.chunk.content };
     if (!evidence) return { id: `c${i}`, claim, citation, doc, verdict: "not_found", score: 0, note: "文献は登録されていますが、本文（PDF）がないため照合できません。" };
     const vec = doc.embed_model === getModel(), score = vec ? best?.score ?? top.score : sim(tokens(claim), evidence.content);
-    return { id: `c${i}`, claim, citation, doc, evidence, verdict: score > (vec ? 0.75 : 0.5) ? "supported" : "partial", score,
+    return { id: `c${i}`, claim, citation, doc, evidence, verdict: score > (vec ? modelInfo().support : 0.5) ? "supported" : "partial", score,
       note: "本文中で最も近い記述を根拠として表示しています（支持・矛盾の判定は LLM 接続後に行います）。" };
   });
   return Promise.all(rows);
@@ -198,7 +198,7 @@ export async function getGraph(): Promise<{ docs: Doc[]; edges: GraphEdge[] }> {
   const linked = (a: string, b: string) => edges.some((e) => [e.source, e.target].includes(a) && [e.source, e.target].includes(b));
   for (const a of docs)
     for (const { b, w } of docs.filter((b) => b.id !== a.id).map((b) => ({ b, w: simOf(a, b) })).sort((x, y) => y.w - x.w).slice(0, 2))
-      if (w >= (vec[a.id] && vec[b.id] ? 0.55 : 0.3) && !linked(a.id, b.id)) edges.push({ source: a.id, target: b.id, kind: "similar", weight: w });
+      if (w >= (vec[a.id] && vec[b.id] ? modelInfo().graph : 0.3) && !linked(a.id, b.id)) edges.push({ source: a.id, target: b.id, kind: "similar", weight: w });
   return { docs, edges };
 }
 
