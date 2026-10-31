@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 33% 98%;
+    --foreground: 224 40% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 40% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 40% 14%;
+    --primary: 226 56% 30%;
+    --primary-foreground: 40 33% 98%;
+    --secondary: 225 30% 94%;
+    --secondary-foreground: 226 56% 24%;
+    --muted: 40 20% 94%;
+    --muted-foreground: 224 12% 44%;
+    --accent: 45 96% 90%;
+    --accent-foreground: 30 60% 22%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 18% 87%;
+    --input: 36 18% 85%;
+    --ring: 226 56% 40%;
+    --radius: 0.6rem;
+    --verified: 152 55% 36%;
+    --partial: 36 92% 46%;
+    --refuted: 0 70% 50%;
+    --marker: 50 100% 72%;
+  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+}
+
+@layer components {
+  .mark { background: linear-gradient(transparent 45%, hsl(var(--marker) / 0.85) 45%); @apply rounded-sm px-0.5; }
+  .mark-ai { background: linear-gradient(transparent 45%, hsl(var(--verified) / 0.28) 45%); @apply rounded-sm px-0.5; }
+}
